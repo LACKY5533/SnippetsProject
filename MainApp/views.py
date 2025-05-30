@@ -2,7 +2,7 @@ from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, render, redirect
 from MainApp.forms import SnippetForm, UserRegistrationForm
 from MainApp.models import Snippet
-from django.contrib import auth
+from django.contrib import auth, messages
 from django.contrib.auth.decorators import login_required
 
 def index_page(request):
@@ -159,24 +159,18 @@ def logout(request):
     return redirect('home')
 
 def create_user(request):
-    context = {'pagename': 'Регистрация нового пользователя'}
-    
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()  # Сохраняем пользователя с хешированным паролем
+            user = form.save()
             messages.success(request, 'Регистрация прошла успешно! Теперь вы можете войти.')
-            return redirect('home')
-        else:
-            # Добавляем ошибки формы в контекст
-            context['form'] = form
-            # Собираем все ошибки в один список
-            errors = []
-            for field in form.errors:
-                for error in form.errors[field]:
-                    errors.append(f"{field}: {error}")
-            context['errors'] = errors
+            return redirect('login')  # Перенаправляем на страницу входа
+            
+        # Обработка ошибок формы
+        for field, error_list in form.errors.items():
+            for error in error_list:
+                messages.error(request, f"{form.fields[field].label if field in form.fields else ''} {error}")
     else:
-        context['form'] = UserRegistrationForm()
-    
-    return render(request, 'pages/registration.html', context)
+        form = UserRegistrationForm()
+
+    return render(request, 'pages/registration.html', {'form': form, 'pagename': 'Регистрация'})
