@@ -1,6 +1,6 @@
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, render, redirect
-from MainApp.forms import SnippetForm
+from MainApp.forms import SnippetForm, UserRegistrationForm
 from MainApp.models import Snippet
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required
@@ -45,7 +45,7 @@ def add_snippet_page(request):
 
 
 def snippets_page(request):
-    snippets = Snippet.objects.all()
+    snippets = Snippet.objects.filter(public=True)
     context = {
         'pagename': 'Просмотр сниппетов',
         'snippets': snippets,
@@ -74,7 +74,7 @@ def snippet_detail(request, snippet_id):
 def snippet_delete(request, snippet_id):
     if request.method == "GET" or request.method == "POST":
         # Найти snippet по snipped_id или вернуть ошибку 404
-        snippet = get_object_or_404(Snippet, id=snippet_id)
+        snippet = get_object_or_404(Snippet.objects.filter(user=request.user), id=snippet_id)
         snippet.delete()  # Удаляем snippet из БД
 
     return redirect("snippets-list")
@@ -85,7 +85,7 @@ def snippet_edit(request, snippet_id):
     context = {"pagename": "Обновление сниппета"}
 
     # Получить сниппет из БД
-    snippet = get_object_or_404(Snippet,id=snippet_id)
+    snippet = get_object_or_404(Snippet.objects.filter(user=request.user),id=snippet_id)
 
     # Создаем форму на основе данных snippet'a при запросе GET
     # Используем параметр instance: SnippetForm(instance=...)
@@ -109,6 +109,7 @@ def snippet_edit(request, snippet_id):
         # Универсальный случай
         for key_as_attr, value in data_form.items():
             setattr(snippet, key_as_attr, value)
+        snippet.public = data_form.get("public", False)
         # Частный случай
         # snippet.name = data_form["name"]
         # snippet.code = data_form["code"]
@@ -156,3 +157,26 @@ def login(request):
 def logout(request):
     auth.logout(request)
     return redirect('home')
+
+def create_user(request):
+    context = {'pagename': 'Регистрация нового пользователя'}
+    
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()  # Сохраняем пользователя с хешированным паролем
+            messages.success(request, 'Регистрация прошла успешно! Теперь вы можете войти.')
+            return redirect('home')
+        else:
+            # Добавляем ошибки формы в контекст
+            context['form'] = form
+            # Собираем все ошибки в один список
+            errors = []
+            for field in form.errors:
+                for error in form.errors[field]:
+                    errors.append(f"{field}: {error}")
+            context['errors'] = errors
+    else:
+        context['form'] = UserRegistrationForm()
+    
+    return render(request, 'pages/registration.html', context)
