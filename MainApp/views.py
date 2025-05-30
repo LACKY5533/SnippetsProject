@@ -1,9 +1,10 @@
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, render, redirect
-from MainApp.forms import SnippetForm, UserRegistrationForm
+from MainApp.forms import SnippetForm, UserRegistrationForm, CommentForm
 from MainApp.models import Snippet
 from django.contrib import auth, messages
 from django.contrib.auth.decorators import login_required
+from http import HTTPStatus
 
 def index_page(request):
     context = {'pagename': 'PythonBin'}
@@ -68,9 +69,10 @@ def snippet_detail(request, snippet_id):
             )
     else:
         context["snippet"] = snippet
+        context["comment_form"] = CommentForm()
         return render(request, "pages/snippet_detail.html", context)
 
-
+@login_required
 def snippet_delete(request, snippet_id):
     if request.method == "GET" or request.method == "POST":
         # Найти snippet по snipped_id или вернуть ошибку 404
@@ -79,7 +81,7 @@ def snippet_delete(request, snippet_id):
 
     return redirect("snippets-list")
 
-
+@login_required
 def snippet_edit(request, snippet_id):
     """ Edit snippet by id"""
     context = {"pagename": "Обновление сниппета"}
@@ -174,3 +176,19 @@ def create_user(request):
         form = UserRegistrationForm()
 
     return render(request, 'pages/registration.html', {'form': form, 'pagename': 'Регистрация'})
+
+@login_required
+def create_comment(request):
+    if request.method == 'POST':
+        comment_form = CommentForm(request.POST)
+        if comment_form.is_valid():
+            snippet_id = request.POST.get("snippet_id")
+            snippet = Snippet.objects.get(id=snippet_id)
+            comment = comment_form.save(commit=False)
+            comment.user = request.user
+            comment.snippet = snippet
+            comment.save()
+            return redirect("snippet-detail", snippet_id=snippet_id)
+
+        return HttpResponse(status=HttpStatus.NO_CONTENT)
+

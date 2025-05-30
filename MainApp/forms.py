@@ -7,7 +7,7 @@ from django.forms import (
     PasswordInput,
     ValidationError
 )
-from MainApp.models import Snippet
+from MainApp.models import Snippet, Comment
 from django.contrib.auth.models import User
 
 # Описание возможностей по настройке форм
@@ -65,3 +65,18 @@ class UserRegistrationForm(ModelForm):
         if commit:
             user.save()
         return user
+
+class CommentForm(ModelForm):
+    
+    class Meta:
+        model = Comment
+        fields = ["text"]
+        labels = {"text:" ""}
+        widgets = {
+            "text": Textarea(attrs={
+               "placeholder": "Комментарий для сниппета",
+                "rows": 5,
+                "class": "form-control",
+                "style": "max-width:300px",   
+            }),
+        }
