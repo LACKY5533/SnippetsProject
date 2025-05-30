@@ -47,3 +47,11 @@ ext install bastiteo.vscode-django
         "*.html": "django-html"
     }
 ```
+
+
+
+
+
+
+
+https://github.com/Hombrer/Snippets_28052025/blob/master/MainApp/forms.py

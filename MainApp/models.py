@@ -22,6 +22,9 @@ class Snippet(models.Model):
     def __repr__(self):
         return f"Snippet({self.id}, {self.name}, {self.lang}, public={self.public})"
 
+    def __str__(self):
+        return f"{self.name}"
+
 
 class Comment(models.Model):
     text = models.TextField(max_length=1000, verbose_name="Текст комментария")
